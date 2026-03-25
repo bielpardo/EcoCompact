@@ -10,12 +10,14 @@
 
 /*********************Variáveis********************/
 unsigned long tempoUltimaLeitura = 0;
+unsigned long tempoUltimaLeituraGeral = 0;
+int DelayEntreLeitura = 2000;
+int DelayEntreLeituraGeral = 5000;
+int sensorAtual = 1; // sensor que vai ser lido 
 
 float valorSensor1 = 0;
 float valorSensor2 = 0;
 float valorSensor3 = 0;
-
-int delaySensor = 0,06
 
 
 /**************************SETUP**************************/
@@ -31,17 +33,20 @@ void setup() {
 }
 
 void loop() {
-	valorSensor1 = ativarSensor(PinoTriggerSensor1, PinoEchoSensor1);
-	Serial.print("Sensor 1: "); Serial.println(valorSensor1); 
-  	delay(60);
-  	valorSensor2 = ativarSensor(PinoTriggerSensor2, PinoEchoSensor2);
-	Serial.print("Sensor 2: "); Serial.println(valorSensor2); 
-  	delay(60);
-  	valorSensor3 = ativarSensor(PinoTriggerSensor3, PinoEchoSensor3);
-	Serial.print("Sensor 2: "); Serial.println(valorSensor3); 	
-  	
-  	delay(5000);
-  
+    while(millis() - tempoUltimaLeituraGeral >= DelayEntreLeituraGeral){
+        if(millis() - tempoUltimaLeitura >= DelayEntreLeitura && sensorAtual == 1){
+            lerSensor(PinoTriggerSensor1, PinoEchoSensor1, valorSensor1);
+        }
+         
+        if(millis() - tempoUltimaLeitura >= DelayEntreLeitura && sensorAtual == 2){
+            lerSensor(PinoTriggerSensor2, PinoEchoSensor2, valorSensor2);
+        }
+        
+        if(millis() - tempoUltimaLeitura >= DelayEntreLeitura && sensorAtual == 3){
+            lerSensor(PinoTriggerSensor3, PinoEchoSensor3, valorSensor3);
+            tempoUltimaLeituraGeral = millis();
+        }
+    }
 }
 
 
@@ -55,4 +60,11 @@ float ativarSensor(int PinoTrigger, int PinoEcho){
 	float valor = pulseIn(PinoEcho, HIGH, 30000);
   	
   	return valor/58; // divisão para transformar valor em centímetros
+}
+
+void lerSensor(int PinoTrigger, int PinoEcho, float valorSensor){
+    valorSensor = ativarSensor(PinoTrigger, PinoEcho);
+    Serial.println("Sensor " + String(sensorAtual) + ": " + String(valorSensor)); 
+    sensorAtual = (sensorAtual == 3) ? 1 : sensorAtual + 1;
+    tempoUltimaLeitura = millis();
 }

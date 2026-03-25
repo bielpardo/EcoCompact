@@ -1,22 +1,25 @@
 /**************** Definição de Pinos***************/
 #define PinoMotorSobe 6
 #define PinoMotorDesce 3
+
 #define PinoBtnEmergencia 8
+#define PinoBtnPausa 0
+#define PinoBtnAcionamento 0
 
 
 /*********************Variáveis********************/
 enum EstadosPrensa{
-  	parado = 0,
+  	espera = 0,
     emergencia,
 	descendo,
   	subindo,
-    espera //desabilita outras ações
+    pausa //termina a ação e entra em estado de pausa
 };
 
-EstadosPrensa estadoPrensa = parado;
+EstadosPrensa estadoPrensa = descendo;
 
 int estadoPwm = 0;
-
+bool esperandoPausa = 0;
 
 /**************************SETUP**************************/
 void setup()
@@ -30,11 +33,12 @@ void setup()
 void loop()
 {
     switch(estadoPrensa){
-        case parado:
-      		esperar();
+        case espera:
+      		descer();
             break;
         
         case emergencia:
+            alertar();
             break;
         
         case descendo:
@@ -42,9 +46,12 @@ void loop()
             break;
         
         case subindo:
+            subir();
             break;
+
         
-        case espera:
+        case pausa:
+            pausar();
             break;
     }
 }
@@ -52,7 +59,25 @@ void loop()
 
 /****************Funções**********************/
 void esperar(){
-    estadoPrensa = descendo;
+    verificarEstado();
+
+    if(esperandoPausa == 1){
+        estadoPrensa = pausa;
+        return;
+    } else {
+        if(estadoPrensa == espera){
+            //Caso Acionamento da Prensa
+            int estadoBtnAcionamento = digitalRead(PinoBtnAcionamento);
+            if(estadoBtnAcionamento){
+                estadoPrensa = descendo;
+                Serial.println("Estado Prensa: Descendo");
+                return;
+            } 
+        }
+    }
+
+    //lendo sensores
+    //enviando dados
 }
 
 void descer(){
@@ -62,22 +87,46 @@ void descer(){
   } else {
   	
   }
-  
+
     //Função verificar corrente atual que motor está puxando
 
 }
 
-void subir(){
+void subir(){}
+
+void alertar(){
+    int estadoBtnEmergencia = digitalRead(PinoBtnEmergencia);
+
     digitalWrite(PinoMotorDesce, LOW);
-    digitalWrite(PinoMotorSobe, HIGH);
+    digitalWrite(PinoMotorSobe, LOW);
+
+    if(estadoBtnEmergencia) {
+        subir();
+        return;
+    }
+}
+
+void pausar(){
+
 }
 
 void verificarEstado() {
-	int estadoBtnEmergencia = digitalRead(PinoBtnEmergencia);
+    if(esperandoPausa == 1) return;
+    
+    //Caso Pausa
+    int estadoBtnPausa = digitalRead(PinoBtnPausa);
+    if(estadoBtnPausa){
+        esperandoPausa = 1;
+        return;
+    }
+
+    //Caso Emergência/Alerta
+    int estadoBtnEmergencia = digitalRead(PinoBtnEmergencia);
     if(estadoBtnEmergencia){
         estadoPrensa = emergencia;
-        Serial.println("Emergencia");
-	}
+        Serial.println("Estado Prensa: Emergencia/Alerta");
+        return;
+	} 
 }
 
 int pwm(){
